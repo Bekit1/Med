@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --card: #171717;
+  --card-hover: #1f1f1f;
+  --border: #262626;
+  --muted: #737373;
+  --emerald: #10b981;
+  --emerald-dark: #059669;
+  --emerald-light: #34d399;
+  --danger: #ef4444;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.25s ease-out;
+}
