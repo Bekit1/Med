@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/lib/context/UserContext";
 import { useToast } from "@/components/ui/Toast";
 import ProtectedLayout from "@/components/layout/ProtectedLayout";
@@ -70,20 +71,29 @@ export default function SurveyPage() {
   const categoryIndex = categoryQuestions.indexOf(currentQuestion);
 
   const loadHistory = useCallback(async () => {
+    if (!user) return;
     setHistoryLoading(true);
     try {
-      const res = await fetch("/api/survey?limit=20");
-      const data = await res.json();
-      if (res.ok) {
-        setHistory(data.surveys || []);
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("health_surveys")
+        .select("id, total_score, category_scores, risk_areas, ai_analysis, completed_at")
+        .eq("user_id", user.id)
+        .order("completed_at", { ascending: false })
+        .limit(20);
+
+      console.log("[survey] loadHistory result:", { data, error, count: data?.length });
+
+      if (error) {
+        console.error("[survey] Supabase error:", error.message, error.code);
       } else {
-        console.error("[survey] Failed to load history:", data.error, data.code);
+        setHistory((data as SurveyHistoryItem[]) || []);
       }
     } catch (err) {
-      console.error("[survey] Network error loading history:", err);
+      console.error("[survey] Error loading history:", err);
     }
     setHistoryLoading(false);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (user) loadHistory();
