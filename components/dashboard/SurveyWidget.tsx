@@ -39,7 +39,10 @@ export default function SurveyWidget({ targetUserId }: { targetUserId?: string |
         query = query.eq("user_id", uid);
       }
 
-      const { data } = await query;
+      const { data, error } = await query;
+      if (error) {
+        console.error("[SurveyWidget] Error loading survey:", error.message, error.code);
+      }
       setSurvey(data && data.length > 0 ? (data[0] as LatestSurvey) : null);
       setLoading(false);
     }

@@ -73,12 +73,14 @@ export default function SurveyPage() {
     setHistoryLoading(true);
     try {
       const res = await fetch("/api/survey?limit=20");
+      const data = await res.json();
       if (res.ok) {
-        const data = await res.json();
         setHistory(data.surveys || []);
+      } else {
+        console.error("[survey] Failed to load history:", data.error, data.code);
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error("[survey] Network error loading history:", err);
     }
     setHistoryLoading(false);
   }, []);
