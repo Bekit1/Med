@@ -5,6 +5,7 @@ import { useUser } from "@/lib/context/UserContext";
 import ProtectedLayout from "@/components/layout/ProtectedLayout";
 import Header from "@/components/layout/Header";
 import HealthSummary from "@/components/dashboard/HealthSummary";
+import KeyMetrics from "@/components/dashboard/KeyMetrics";
 import RecentRecords from "@/components/dashboard/RecentRecords";
 import AiInsights from "@/components/dashboard/AiInsights";
 import MetricsChart from "@/components/dashboard/MetricsChart";
@@ -45,6 +46,9 @@ export default function DashboardPage() {
 
         {/* 4 Status cards */}
         <HealthSummary targetUserId={selectedUserId} />
+
+        {/* Key health metrics */}
+        <KeyMetrics targetUserId={selectedUserId} />
 
         {/* AI recommendations + Recent records */}
         <div className="grid gap-6 lg:grid-cols-2">
