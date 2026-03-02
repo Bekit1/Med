@@ -103,17 +103,32 @@ export async function POST(request: NextRequest) {
         ? result.recommendations.join("\n• ")
         : null;
 
+    // Determine the effective date — document_date takes priority over record_date
+    let effectiveDate = record.record_date;
+    if (result.document_date) {
+      console.log("[analyze] Document date extracted:", result.document_date, "— updating record date");
+      effectiveDate = result.document_date;
+    }
+
+    // Build record update payload
+    const recordUpdate: Record<string, unknown> = {
+      ai_analysis: analysisText,
+      ai_recommendations: recommendationsText
+        ? `• ${recommendationsText}`
+        : null,
+      status: result.status,
+      tags: result.tags.length > 0 ? result.tags : record.tags,
+    };
+
+    // Update record_date if document_date was extracted
+    if (result.document_date) {
+      recordUpdate.record_date = result.document_date;
+    }
+
     // Update the medical record
     const { error: updateError } = await supabase
       .from("medical_records")
-      .update({
-        ai_analysis: analysisText,
-        ai_recommendations: recommendationsText
-          ? `• ${recommendationsText}`
-          : null,
-        status: result.status,
-        tags: result.tags.length > 0 ? result.tags : record.tags,
-      })
+      .update(recordUpdate)
       .eq("id", record_id);
 
     if (updateError) {
@@ -134,7 +149,7 @@ export async function POST(request: NextRequest) {
         reference_min: finding.reference_min,
         reference_max: finding.reference_max,
         status: finding.status,
-        measured_at: record.record_date,
+        measured_at: effectiveDate,
       });
 
       if (metricError) {
@@ -148,6 +163,7 @@ export async function POST(request: NextRequest) {
       recommendations: recommendationsText
         ? `• ${recommendationsText}`
         : null,
+      document_date: result.document_date,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

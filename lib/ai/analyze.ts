@@ -13,12 +13,14 @@ export interface AnalysisFinding {
 }
 
 export interface AnalysisResult {
+  document_date: string | null;
   summary: string;
   status: "normal" | "warning" | "attention";
   findings: AnalysisFinding[];
   recommendations: string[];
   follow_up: string | null;
   tags: string[];
+  important_notes: string[];
 }
 
 interface AttachmentData {
@@ -86,12 +88,14 @@ export async function analyzeRecord(
 
 export function parseAnalysisResponse(text: string): AnalysisResult {
   const fallback: AnalysisResult = {
+    document_date: null,
     summary: text || "Не удалось проанализировать документ.",
     status: "normal",
     findings: [],
     recommendations: [],
     follow_up: null,
     tags: [],
+    important_notes: [],
   };
 
   if (!text) return fallback;
@@ -132,7 +136,14 @@ export function parseAnalysisResponse(text: string): AnalysisResult {
 }
 
 function normalizeResult(raw: Record<string, unknown>): AnalysisResult {
+  // Validate document_date format (YYYY-MM-DD)
+  let documentDate: string | null = null;
+  if (typeof raw.document_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.document_date)) {
+    documentDate = raw.document_date;
+  }
+
   return {
+    document_date: documentDate,
     summary: (raw.summary as string) || "",
     status: (["normal", "warning", "attention"].includes(raw.status as string)
       ? raw.status
@@ -141,6 +152,7 @@ function normalizeResult(raw: Record<string, unknown>): AnalysisResult {
     recommendations: Array.isArray(raw.recommendations) ? raw.recommendations : [],
     follow_up: (raw.follow_up as string) || null,
     tags: Array.isArray(raw.tags) ? raw.tags : [],
+    important_notes: Array.isArray(raw.important_notes) ? raw.important_notes : [],
   };
 }
 
