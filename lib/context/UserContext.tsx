@@ -11,6 +11,7 @@ interface UserContextValue {
   isAdmin: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextValue>({
@@ -19,6 +20,7 @@ const UserContext = createContext<UserContextValue>({
   isAdmin: false,
   loading: true,
   signOut: async () => {},
+  refreshProfile: async () => {},
 });
 
 export function useUser() {
@@ -85,6 +87,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const refreshProfile = async () => {
+    if (user) {
+      await loadProfile(user.id);
+    }
+  };
+
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -104,6 +112,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         isAdmin: profile?.role === "admin",
         loading,
         signOut,
+        refreshProfile,
       }}
     >
       {children}

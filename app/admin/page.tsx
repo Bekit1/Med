@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/lib/context/UserContext";
 import { useToast } from "@/components/ui/Toast";
@@ -199,9 +200,10 @@ export default function AdminPage() {
           ) : (
             <div className="space-y-2">
               {members.map((member) => (
-                <div
+                <Link
                   key={member.id}
-                  className="flex items-center justify-between rounded-lg bg-[var(--background)] p-3"
+                  href={`/profile?user_id=${member.id}`}
+                  className="flex items-center justify-between rounded-lg bg-[var(--background)] p-3 cursor-pointer hover:bg-white/5 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 text-sm font-medium">
@@ -220,10 +222,15 @@ export default function AdminPage() {
                       </p>
                     </div>
                   </div>
-                  <Badge variant={statusVariant[member.worstStatus]}>
-                    {statusLabels[member.worstStatus]}
-                  </Badge>
-                </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={statusVariant[member.worstStatus]}>
+                      {statusLabels[member.worstStatus]}
+                    </Badge>
+                    <svg className="h-4 w-4 text-[var(--muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </Link>
               ))}
             </div>
           )}

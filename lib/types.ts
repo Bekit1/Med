@@ -16,8 +16,18 @@ export interface Profile {
   allergies: string | null;
   chronic_conditions: string | null;
   avatar_url: string | null;
+  height_cm: number | null;
+  weight_kg: number | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface WeightHistoryEntry {
+  id: string;
+  user_id: string;
+  weight_kg: number;
+  recorded_at: string;
+  created_at: string;
 }
 
 export interface MedicalRecord {

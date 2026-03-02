@@ -197,7 +197,7 @@ async function buildPatientContext(supabase: any, userId: string): Promise<strin
   // Profile
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, date_of_birth, gender, blood_type, allergies, chronic_conditions")
+    .select("full_name, date_of_birth, gender, blood_type, allergies, chronic_conditions, height_cm, weight_kg")
     .eq("id", userId)
     .single();
 
@@ -209,6 +209,28 @@ async function buildPatientContext(supabase: any, userId: string): Promise<strin
     if (profile.blood_type) parts.push(`Группа крови: ${profile.blood_type}`);
     if (profile.allergies) parts.push(`Аллергии: ${profile.allergies}`);
     if (profile.chronic_conditions) parts.push(`Хронические заболевания: ${profile.chronic_conditions}`);
+    if (profile.height_cm) parts.push(`Рост: ${profile.height_cm} см`);
+    if (profile.weight_kg) parts.push(`Вес: ${profile.weight_kg} кг`);
+    if (profile.height_cm && profile.weight_kg) {
+      const heightM = profile.height_cm / 100;
+      const bmi = (profile.weight_kg / (heightM * heightM)).toFixed(1);
+      parts.push(`ИМТ: ${bmi}`);
+    }
+  }
+
+  // Weight history (last 10)
+  const { data: weightHistory } = await supabase
+    .from("weight_history")
+    .select("weight_kg, recorded_at")
+    .eq("user_id", userId)
+    .order("recorded_at", { ascending: false })
+    .limit(10);
+
+  if (weightHistory && weightHistory.length > 0) {
+    parts.push("\n== История веса ==");
+    for (const w of weightHistory) {
+      parts.push(`[${w.recorded_at}] ${w.weight_kg} кг`);
+    }
   }
 
   // Recent medical records (last 50)
