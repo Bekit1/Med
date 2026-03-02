@@ -45,6 +45,10 @@ export default function RecordList({ records, onRecordUpdated }: RecordListProps
           setSelectedRecord(null);
           onRecordUpdated?.();
         }}
+        onRecordDeleted={() => {
+          setSelectedRecord(null);
+          onRecordUpdated?.();
+        }}
       />
     </>
   );

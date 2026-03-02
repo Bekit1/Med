@@ -210,7 +210,7 @@ export async function DELETE(request: NextRequest) {
       return apiError("Нет доступа к этой записи", "FORBIDDEN", 403);
     }
 
-    // Сначала удалим файлы из Storage
+    // Удалим файлы из Storage
     const { data: attachments } = await supabase
       .from("attachments")
       .select("storage_path")
@@ -220,6 +220,9 @@ export async function DELETE(request: NextRequest) {
       const paths = attachments.map((a) => a.storage_path);
       await supabase.storage.from("medical-files").remove(paths);
     }
+
+    // Удалим связанные метрики
+    await supabase.from("health_metrics").delete().eq("record_id", id);
 
     // Удалим запись (attachments удалятся каскадно)
     const { error } = await supabase
