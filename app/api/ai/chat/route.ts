@@ -247,6 +247,32 @@ async function buildPatientContext(supabase: any, userId: string): Promise<strin
     }
   }
 
+  // Latest health survey
+  const { data: surveys } = await supabase
+    .from("health_surveys")
+    .select("total_score, category_scores, risk_areas, ai_analysis, completed_at")
+    .eq("user_id", userId)
+    .order("completed_at", { ascending: false })
+    .limit(3);
+
+  if (surveys && surveys.length > 0) {
+    parts.push("\n== Результаты опросников самочувствия ==");
+    for (const s of surveys) {
+      const scores = s.category_scores as Record<string, number>;
+      const categoryStr = Object.entries(scores)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(", ");
+      parts.push(`[${s.completed_at}] Общий балл: ${s.total_score}/100 (${categoryStr})`);
+      if (s.risk_areas && s.risk_areas.length > 0) {
+        parts.push(`  Зоны риска: ${s.risk_areas.join(", ")}`);
+      }
+      if (s.ai_analysis) {
+        const short = s.ai_analysis.length > 300 ? s.ai_analysis.slice(0, 300) + "..." : s.ai_analysis;
+        parts.push(`  AI-анализ: ${short}`);
+      }
+    }
+  }
+
   if (parts.length === 0) {
     return "Медицинская история пациента пока пуста.";
   }
