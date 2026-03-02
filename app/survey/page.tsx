@@ -70,14 +70,18 @@ export default function SurveyPage() {
   const categoryQuestions = QUESTIONS.filter((q) => q.category === currentCategory);
   const categoryIndex = categoryQuestions.indexOf(currentQuestion);
 
-  const loadHistory = useCallback(async () => {
-    if (!user) return;
+  async function loadHistory() {
+    if (!user) {
+      console.log("[survey] loadHistory skipped — no user");
+      return;
+    }
+    console.log("[survey] loadHistory called for user:", user.id);
     setHistoryLoading(true);
     try {
       const supabase = createClient();
       const { data, error } = await supabase
         .from("health_surveys")
-        .select("id, total_score, category_scores, risk_areas, ai_analysis, completed_at")
+        .select("*")
         .eq("user_id", user.id)
         .order("completed_at", { ascending: false })
         .limit(20);
@@ -93,11 +97,12 @@ export default function SurveyPage() {
       console.error("[survey] Error loading history:", err);
     }
     setHistoryLoading(false);
-  }, [user]);
+  }
 
   useEffect(() => {
+    console.log("[survey] useEffect triggered, user:", user?.id ?? "null");
     if (user) loadHistory();
-  }, [user, loadHistory]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleAnswer(value: number) {
     const newAnswers = { ...answers, [currentQuestion.id]: value };
