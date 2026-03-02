@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/lib/context/UserContext";
 import { useToast } from "@/components/ui/Toast";
@@ -41,7 +41,18 @@ interface SurveyHistoryItem {
   completed_at: string;
 }
 
+// Page wrapper — ProtectedLayout creates UserProvider,
+// so useUser() must be called INSIDE ProtectedLayout's children
 export default function SurveyPage() {
+  return (
+    <ProtectedLayout>
+      <SurveyContent />
+    </ProtectedLayout>
+  );
+}
+
+// All logic lives here — inside ProtectedLayout where UserProvider exists
+function SurveyContent() {
   const { user } = useUser();
   const { toast } = useToast();
 
@@ -193,7 +204,7 @@ export default function SurveyPage() {
   }
 
   return (
-    <ProtectedLayout>
+    <>
       <Header title="Опросник самочувствия" description="Оценка состояния здоровья" />
       <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-6">
         {view === "intro" && (
@@ -248,7 +259,7 @@ export default function SurveyPage() {
           />
         )}
       </div>
-    </ProtectedLayout>
+    </>
   );
 }
 
