@@ -17,6 +17,27 @@ export interface SurveyQuestion {
 
 export type SurveyCategory = "sleep" | "emotional" | "physical" | "nutrition" | "lifestyle";
 
+/** New answer format: score + optional text note */
+export interface SurveyAnswer {
+  score: number;
+  note: string;
+}
+
+/** Answers map — new format uses SurveyAnswer, old format used plain numbers */
+export type SurveyAnswers = Record<string, SurveyAnswer>;
+
+/** Extract numeric score from an answer value (supports both old number and new {score,note} format) */
+function extractScore(val: number | SurveyAnswer): number {
+  if (typeof val === "number") return val;
+  return val.score;
+}
+
+/** Extract note from an answer value (returns "" for old format) */
+function extractNote(val: number | SurveyAnswer): string {
+  if (typeof val === "number") return "";
+  return val.note || "";
+}
+
 export interface CategoryInfo {
   id: SurveyCategory;
   label: string;
@@ -353,7 +374,8 @@ export const QUESTIONS: SurveyQuestion[] = [
 ];
 
 // Вычислить баллы по категориям и общий балл
-export function computeScores(answers: Record<string, number>): {
+// Поддерживает оба формата: старый Record<string, number> и новый Record<string, SurveyAnswer>
+export function computeScores(answers: Record<string, number | SurveyAnswer>): {
   categoryScores: Record<SurveyCategory, number>;
   totalScore: number;
   riskAreas: SurveyCategory[];
@@ -369,7 +391,7 @@ export function computeScores(answers: Record<string, number>): {
   for (const q of QUESTIONS) {
     const val = answers[q.id];
     if (val !== undefined) {
-      categoryScores[q.category] += val;
+      categoryScores[q.category] += extractScore(val);
     }
   }
 
@@ -404,8 +426,9 @@ export function getHealthLevel(totalScore: number): {
 }
 
 // Подготовить текстовое описание результатов для AI
+// Поддерживает оба формата ответов
 export function formatResultsForAI(
-  answers: Record<string, number>,
+  answers: Record<string, number | SurveyAnswer>,
   categoryScores: Record<SurveyCategory, number>,
   totalScore: number,
 ): string {
@@ -425,9 +448,14 @@ export function formatResultsForAI(
   for (const q of QUESTIONS) {
     const val = answers[q.id];
     if (val !== undefined) {
-      const option = q.options.find((o) => o.value === val);
+      const score = extractScore(val);
+      const note = extractNote(val);
+      const option = q.options.find((o) => o.value === score);
       lines.push(`- ${q.text}`);
-      lines.push(`  Ответ: ${option?.label || val}`);
+      lines.push(`  Ответ: ${option?.label || score}`);
+      if (note) {
+        lines.push(`  Уточнение пациента: ${note}`);
+      }
     }
   }
 

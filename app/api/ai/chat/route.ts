@@ -400,7 +400,7 @@ async function buildPatientContext(supabase: any, userId: string): Promise<strin
   // Latest health survey
   const { data: surveys } = await supabase
     .from("health_surveys")
-    .select("total_score, category_scores, risk_areas, ai_analysis, completed_at")
+    .select("total_score, category_scores, risk_areas, ai_analysis, answers, completed_at")
     .eq("user_id", userId)
     .order("completed_at", { ascending: false })
     .limit(3);
@@ -415,6 +415,19 @@ async function buildPatientContext(supabase: any, userId: string): Promise<strin
       parts.push(`[${s.completed_at}] Общий балл: ${s.total_score}/100 (${categoryStr})`);
       if (s.risk_areas && s.risk_areas.length > 0) {
         parts.push(`  Зоны риска: ${s.risk_areas.join(", ")}`);
+      }
+      // Extract notes from answers (new format: {q1: {score, note}})
+      if (s.answers && typeof s.answers === "object") {
+        const answersObj = s.answers as Record<string, { score?: number; note?: string } | number>;
+        const notes: string[] = [];
+        for (const [key, val] of Object.entries(answersObj)) {
+          if (typeof val === "object" && val?.note) {
+            notes.push(`${key}: ${val.note}`);
+          }
+        }
+        if (notes.length > 0) {
+          parts.push(`  Уточнения пациента: ${notes.join("; ")}`);
+        }
       }
       if (s.ai_analysis) {
         const short = s.ai_analysis.length > 300 ? s.ai_analysis.slice(0, 300) + "..." : s.ai_analysis;

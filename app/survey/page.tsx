@@ -14,6 +14,8 @@ import {
   getHealthLevel,
   formatResultsForAI,
   type SurveyCategory,
+  type SurveyAnswer,
+  type SurveyAnswers,
 } from "@/lib/survey/questions";
 import {
   ResponsiveContainer,
@@ -58,7 +60,7 @@ function SurveyContent() {
 
   const [view, setView] = useState<ViewMode>("intro");
   const [currentStep, setCurrentStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [answers, setAnswers] = useState<SurveyAnswers>({});
 
   // Results
   const [categoryScores, setCategoryScores] = useState<Record<SurveyCategory, number> | null>(null);
@@ -116,12 +118,23 @@ function SurveyContent() {
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleAnswer(value: number) {
-    const newAnswers = { ...answers, [currentQuestion.id]: value };
+    const existing = answers[currentQuestion.id];
+    const newAnswers = {
+      ...answers,
+      [currentQuestion.id]: { score: value, note: existing?.note || "" },
+    };
     setAnswers(newAnswers);
 
     // Auto-advance to next question
     if (currentStep < totalQuestions - 1) {
       setTimeout(() => setCurrentStep(currentStep + 1), 200);
+    }
+  }
+
+  function handleNoteChange(questionId: string, note: string) {
+    const existing = answers[questionId];
+    if (existing) {
+      setAnswers({ ...answers, [questionId]: { ...existing, note } });
     }
   }
 
@@ -193,7 +206,7 @@ function SurveyContent() {
   }
 
   function startNewSurvey() {
-    setAnswers({});
+    setAnswers({} as SurveyAnswers);
     setCurrentStep(0);
     setCategoryScores(null);
     setTotalScore(0);
@@ -228,6 +241,7 @@ function SurveyContent() {
             categoryLabel={CATEGORIES.find((c) => c.id === currentCategory)?.label || ""}
             categoryIcon={CATEGORIES.find((c) => c.id === currentCategory)?.icon || ""}
             onAnswer={handleAnswer}
+            onNoteChange={handleNoteChange}
             onPrev={() => setCurrentStep(Math.max(0, currentStep - 1))}
             onNext={() => setCurrentStep(Math.min(totalQuestions - 1, currentStep + 1))}
             onSubmit={handleSubmit}
@@ -241,6 +255,7 @@ function SurveyContent() {
             totalScore={totalScore}
             categoryScores={categoryScores}
             riskAreas={riskAreas}
+            answers={answers}
             aiAnalysis={aiAnalysis}
             analyzing={analyzing}
             onRequestAi={requestAiAnalysis}
@@ -350,6 +365,7 @@ function SurveyView({
   categoryLabel,
   categoryIcon,
   onAnswer,
+  onNoteChange,
   onPrev,
   onNext,
   onSubmit,
@@ -360,12 +376,13 @@ function SurveyView({
   currentStep: number;
   totalQuestions: number;
   answeredCount: number;
-  answers: Record<string, number>;
+  answers: SurveyAnswers;
   categoryIndex: number;
   categoryTotal: number;
   categoryLabel: string;
   categoryIcon: string;
   onAnswer: (value: number) => void;
+  onNoteChange: (questionId: string, note: string) => void;
   onPrev: () => void;
   onNext: () => void;
   onSubmit: () => void;
@@ -373,7 +390,8 @@ function SurveyView({
   isLast: boolean;
 }) {
   const progress = ((currentStep + 1) / totalQuestions) * 100;
-  const selectedValue = answers[question.id];
+  const currentAnswer = answers[question.id];
+  const selectedValue = currentAnswer?.score;
 
   return (
     <div className="space-y-4">
@@ -416,6 +434,19 @@ function SurveyView({
               </button>
             ))}
           </div>
+
+          {/* Note / clarification textarea */}
+          {selectedValue !== undefined && (
+            <div className="pt-2">
+              <textarea
+                value={currentAnswer?.note || ""}
+                onChange={(e) => onNoteChange(question.id, e.target.value)}
+                placeholder="Уточнение (необязательно) — опишите детали, если хотите"
+                rows={2}
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted)] focus:outline-none focus:border-emerald-500/50 resize-none"
+              />
+            </div>
+          )}
         </div>
       </Card>
 
@@ -461,6 +492,7 @@ function ResultsView({
   totalScore,
   categoryScores,
   riskAreas,
+  answers,
   aiAnalysis,
   analyzing,
   onRequestAi,
@@ -471,6 +503,7 @@ function ResultsView({
   totalScore: number;
   categoryScores: Record<SurveyCategory, number>;
   riskAreas: SurveyCategory[];
+  answers: SurveyAnswers;
   aiAnalysis: string | null;
   analyzing: boolean;
   onRequestAi: () => void;
@@ -558,6 +591,34 @@ function ResultsView({
           })}
         </div>
       </Card>
+
+      {/* Answers with notes */}
+      {(() => {
+        const notedAnswers = QUESTIONS.filter((q) => answers[q.id]?.note);
+        if (notedAnswers.length === 0) return null;
+        return (
+          <Card>
+            <h3 className="text-sm font-medium mb-3">Ваши уточнения</h3>
+            <div className="space-y-3">
+              {notedAnswers.map((q) => {
+                const a = answers[q.id];
+                const option = q.options.find((o) => o.value === a.score);
+                return (
+                  <div key={q.id} className="text-sm">
+                    <p className="text-[var(--muted)]">{q.text}</p>
+                    <p className="text-xs text-[var(--muted)] mt-0.5">
+                      Ответ: {option?.label || a.score}
+                    </p>
+                    <p className="mt-1 rounded-lg bg-[var(--background)] px-3 py-2 text-sm">
+                      {a.note}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        );
+      })()}
 
       {/* AI Analysis */}
       <Card>
