@@ -124,11 +124,6 @@ function SurveyContent() {
       [currentQuestion.id]: { score: value, note: existing?.note || "" },
     };
     setAnswers(newAnswers);
-
-    // Auto-advance to next question
-    if (currentStep < totalQuestions - 1) {
-      setTimeout(() => setCurrentStep(currentStep + 1), 200);
-    }
   }
 
   function handleNoteChange(questionId: string, note: string) {
