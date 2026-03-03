@@ -288,6 +288,79 @@ async function buildPatientContext(supabase: any, userId: string): Promise<strin
     }
   }
 
+  // Health conditions
+  interface ConditionRow {
+    name: string; condition_type: string; status: string; severity: string | null;
+    diagnosed_at: string | null; resolved_at: string | null; diagnosed_by: string | null;
+    symptoms: string[] | null; notes: string | null;
+  }
+  const { data: rawConditions } = await supabase
+    .from("health_conditions")
+    .select("name, condition_type, status, severity, diagnosed_at, resolved_at, diagnosed_by, symptoms, notes")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  const allConditions = (rawConditions || []) as ConditionRow[];
+
+  if (allConditions.length > 0) {
+    const severityLabels: Record<string, string> = { mild: "лёгкая", moderate: "умеренная", severe: "тяжёлая" };
+    const statusLabels: Record<string, string> = { active: "активно", remission: "ремиссия", monitoring: "наблюдение", resolved: "вылечено" };
+
+    const chronicActive = allConditions.filter((c) => c.condition_type === "chronic" && c.status !== "resolved");
+    const acuteActive = allConditions.filter((c) => c.condition_type === "acute" && c.status === "active");
+    const riskFactors = allConditions.filter((c) => c.condition_type === "risk_factor");
+
+    // Recently resolved (last year)
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    const recentResolved = allConditions.filter(
+      (c) => c.status === "resolved" && c.resolved_at && new Date(c.resolved_at) >= oneYearAgo
+    );
+
+    if (chronicActive.length > 0) {
+      parts.push("\n== Хронические заболевания ==");
+      for (const c of chronicActive) {
+        let line = `- ${c.name}, ${statusLabels[c.status] || c.status}`;
+        if (c.severity) line += `, ${severityLabels[c.severity] || c.severity}`;
+        if (c.diagnosed_at) line += `, диагн. ${c.diagnosed_at}`;
+        if (c.diagnosed_by) line += ` (${c.diagnosed_by})`;
+        if (c.symptoms && c.symptoms.length > 0) line += `, симптомы: ${c.symptoms.join(", ")}`;
+        parts.push(line);
+      }
+    }
+
+    if (acuteActive.length > 0) {
+      parts.push("\n== Текущие острые заболевания ==");
+      for (const c of acuteActive) {
+        let line = `- ${c.name}`;
+        if (c.severity) line += `, ${severityLabels[c.severity] || c.severity}`;
+        if (c.diagnosed_at) line += `, с ${c.diagnosed_at}`;
+        if (c.symptoms && c.symptoms.length > 0) line += `, симптомы: ${c.symptoms.join(", ")}`;
+        parts.push(line);
+      }
+    }
+
+    if (riskFactors.length > 0) {
+      parts.push("\n== Факторы риска ==");
+      for (const c of riskFactors) {
+        let line = `- ${c.name}`;
+        if (c.notes) line += `: ${c.notes}`;
+        parts.push(line);
+      }
+    }
+
+    if (recentResolved.length > 0) {
+      parts.push("\n== Перенесённые заболевания (последний год) ==");
+      for (const c of recentResolved) {
+        let line = `- ${c.name}`;
+        if (c.diagnosed_at) line += `, ${c.diagnosed_at}`;
+        if (c.resolved_at) line += ` — ${c.resolved_at}`;
+        line += ", вылечено";
+        parts.push(line);
+      }
+    }
+  }
+
   // Recent medical records (last 50)
   const { data: records } = await supabase
     .from("medical_records")

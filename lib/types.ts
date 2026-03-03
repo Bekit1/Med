@@ -104,6 +104,30 @@ export interface Medication {
   updated_at: string;
 }
 
+export type ConditionType = "chronic" | "acute" | "past" | "risk_factor";
+
+export type ConditionStatus = "active" | "remission" | "resolved" | "monitoring";
+
+export type ConditionSeverity = "mild" | "moderate" | "severe";
+
+export interface HealthCondition {
+  id: string;
+  user_id: string;
+  name: string;
+  condition_type: ConditionType;
+  status: ConditionStatus;
+  severity: ConditionSeverity | null;
+  diagnosed_at: string | null;
+  resolved_at: string | null;
+  diagnosed_by: string | null;
+  icd_code: string | null;
+  notes: string | null;
+  symptoms: string[];
+  related_medications: string[];
+  created_at: string;
+  updated_at: string;
+}
+
 export interface AiInsight {
   id: string;
   title: string;
