@@ -12,6 +12,7 @@ import MetricsChart from "@/components/dashboard/MetricsChart";
 import UpcomingControls from "@/components/dashboard/UpcomingControls";
 import FamilyOverview from "@/components/dashboard/FamilyOverview";
 import SurveyWidget from "@/components/dashboard/SurveyWidget";
+import MedicationsWidget from "@/components/dashboard/MedicationsWidget";
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString("ru-RU", {
@@ -57,11 +58,15 @@ export default function DashboardPage() {
           <RecentRecords targetUserId={selectedUserId} />
         </div>
 
-        {/* Metrics chart + Upcoming controls + Survey widget */}
+        {/* Metrics chart + Upcoming controls + Survey widget + Medications */}
         <div className="grid gap-6 lg:grid-cols-3">
           <MetricsChart targetUserId={selectedUserId} />
           <UpcomingControls targetUserId={selectedUserId} />
           <SurveyWidget targetUserId={selectedUserId} />
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          <MedicationsWidget targetUserId={selectedUserId} />
         </div>
 
         {/* Admin-only: Family overview */}

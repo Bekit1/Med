@@ -82,6 +82,28 @@ export interface HealthMetric {
   created_at: string;
 }
 
+export type MedicationType = "medication" | "vitamin" | "supplement" | "other";
+
+export type MedicationFrequency = "daily_1" | "daily_2" | "daily_3" | "weekly" | "as_needed" | "other";
+
+export interface Medication {
+  id: string;
+  user_id: string;
+  name: string;
+  type: MedicationType;
+  dosage: string | null;
+  frequency: MedicationFrequency;
+  frequency_detail: string | null;
+  reason: string | null;
+  started_at: string;
+  ended_at: string | null;
+  is_active: boolean;
+  notes: string | null;
+  prescribed_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface AiInsight {
   id: string;
   title: string;

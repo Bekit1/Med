@@ -233,6 +233,61 @@ async function buildPatientContext(supabase: any, userId: string): Promise<strin
     }
   }
 
+  // Active medications
+  const { data: activeMeds } = await supabase
+    .from("medications")
+    .select("name, type, dosage, frequency, frequency_detail, reason, started_at, prescribed_by")
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .order("started_at", { ascending: false });
+
+  if (activeMeds && activeMeds.length > 0) {
+    const freqLabels: Record<string, string> = {
+      daily_1: "ежедневно", daily_2: "2 раза/день", daily_3: "3 раза/день",
+      weekly: "еженедельно", as_needed: "по необходимости", other: "другое",
+    };
+    parts.push("\n== Текущие препараты ==");
+    for (const m of activeMeds) {
+      let line = `- ${m.name}`;
+      if (m.dosage) line += `, ${m.dosage}`;
+      line += `, ${freqLabels[m.frequency] || m.frequency}`;
+      if (m.frequency_detail) line += ` (${m.frequency_detail})`;
+      line += `, с ${m.started_at}`;
+      if (m.prescribed_by) line += ` (${m.prescribed_by})`;
+      if (m.reason) line += ` — ${m.reason}`;
+      parts.push(line);
+    }
+  }
+
+  // Recently ended medications (last 6 months)
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  const { data: endedMeds } = await supabase
+    .from("medications")
+    .select("name, type, dosage, frequency, reason, started_at, ended_at, prescribed_by")
+    .eq("user_id", userId)
+    .eq("is_active", false)
+    .gte("ended_at", sixMonthsAgo.toISOString().split("T")[0])
+    .order("ended_at", { ascending: false })
+    .limit(20);
+
+  if (endedMeds && endedMeds.length > 0) {
+    const freqLabels: Record<string, string> = {
+      daily_1: "ежедневно", daily_2: "2 раза/день", daily_3: "3 раза/день",
+      weekly: "еженедельно", as_needed: "по необходимости", other: "другое",
+    };
+    parts.push("\n== Завершённые препараты (последние 6 мес.) ==");
+    for (const m of endedMeds) {
+      let line = `- ${m.name}`;
+      if (m.dosage) line += `, ${m.dosage}`;
+      line += `, ${freqLabels[m.frequency] || m.frequency}`;
+      line += `, ${m.started_at} — ${m.ended_at}`;
+      if (m.prescribed_by) line += ` (${m.prescribed_by})`;
+      if (m.reason) line += ` — ${m.reason}`;
+      parts.push(line);
+    }
+  }
+
   // Recent medical records (last 50)
   const { data: records } = await supabase
     .from("medical_records")
